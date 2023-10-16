@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  wazuh:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2023-06-01T12:36:33.158161344-03:00"
+    description: A Helm chart for Wazuh
+    digest: 9330d9d5fb5abad610331d5c3bdc3dd3e3ff9e989558e543f282cd4329dde153
+    name: wazuh
+    type: application
+    urls:
+    - wazuh-0.1.0.tgz
+    version: 0.1.0
+generated: "2023-06-01T12:36:33.155596726-03:00"
