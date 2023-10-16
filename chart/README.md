@@ -39,7 +39,7 @@ apt-get update
 4. Deploy do agente Wazuh:
 
 ```
-WAZUH_MANAGER="wazuh.csic.ufpa.br" WAZUH_MANAGER_PORT="30001" WAZUH_REGISTRATION_PORT="30002" WAZUH_REGISTRATION_PASSWORD="password" WAZUH_AGENT_NAME="teste2" apt-get install wazuh-agent
+WAZUH_MANAGER="wazuh.example.com" WAZUH_MANAGER_PORT="30001" WAZUH_REGISTRATION_PORT="30002" WAZUH_REGISTRATION_PASSWORD="password" WAZUH_AGENT_NAME="teste2" apt-get install wazuh-agent
 ```
 
 Em que:
@@ -72,7 +72,7 @@ sudo journalctl -u wazuh-agent.service
 
 1. Execute o comando no terminal do windows (PowerShell).
 ```
-Invoke-WebRequest -Uri https://packages.wazuh.com/4.x/windows/wazuh-agent-4.3.4-1.msi -OutFile wazuh-agent-4.3.4.msi; ./wazuh-agent-4.3.4.msi /q WAZUH_MANAGER="wazuh.csic.ufpa.br" WAZUH_MANAGER_PORT="30001" WAZUH_REGISTRATION_PORT="30002" WAZUH_REGISTRATION_PASSWORD="Pk95*3KL" WAZUH_AGENT_NAME="teste2"
+Invoke-WebRequest -Uri https://packages.wazuh.com/4.x/windows/wazuh-agent-4.3.4-1.msi -OutFile wazuh-agent-4.3.4.msi; ./wazuh-agent-4.3.4.msi /q WAZUH_MANAGER="wazuh.example.com" WAZUH_MANAGER_PORT="30001" WAZUH_REGISTRATION_PORT="30002" WAZUH_REGISTRATION_PASSWORD="Pk95*3KL" WAZUH_AGENT_NAME="teste2"
 ```
 
 Em que:
@@ -106,7 +106,7 @@ Editar o playbook /etc/ansible/roles/wazuh-ansible/playbooks/wazuh-agent.yml com
     - ../roles/wazuh/ansible-wazuh-agent
   vars:
     wazuh_managers:
-      - address: wazuh.csic.ufpa.br
+      - address: wazuh.example.com
         port: 30001
         protocol: tcp
         api_port: 30003
@@ -115,13 +115,13 @@ Editar o playbook /etc/ansible/roles/wazuh-ansible/playbooks/wazuh-agent.yml com
         max_retries: 5
         retry_interval: 5
     wazuh_agent_authd:
-      registration_address: wazuh.csic.ufpa.br
+      registration_address: wazuh.example.com
       enable: true
       port: 30002
       ssl_agent_ca: null
       ssl_auto_negotiate: 'no'
     wazuh_agent_enrollment:
-      manager_address: 'wazuh.csic.ufpa.br'
+      manager_address: 'wazuh.example.com'
       port: 30002
       authorization_pass_path: /var/ossec/etc/authd.pass
 ```
