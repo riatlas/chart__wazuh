@@ -1,0 +1,19 @@
+{{- if .Values.managerWorker.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-workers
+  labels:
+    app: wazuh-manager
+spec:
+  selector:
+    app: wazuh-manager
+    node-type: worker
+  ports:
+  {{- .Values.workers.ports | toYaml | nindent 2 }}
+  # - name: agents-events
+  #   nodePort: 30001
+  #   port: 1514
+  #   targetPort: 1514
+  type: {{ .Values.workers.type }}
+  {{- end -}}
