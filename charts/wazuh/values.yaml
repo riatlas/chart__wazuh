@@ -3,17 +3,17 @@ kubernetesClusterDomain: cluster.local
 # Credentials
 cred:
   api:
-    password: 123
+    password: "123"
     username: wazuh-wui
   authd:
     password: password
   cluster:
-    key: 123
+    key: "123"
   dashboard:
-    password: 123
+    password: "123"
     username: kibanaserver
   indexer:
-    password: 123
+    password: "123"
     username: admin
 
 # Svc for cluster (master + worker)
@@ -94,6 +94,19 @@ managerMaster:
     image:
       repository: wazuh/wazuh-manager
       # tag: ""
+  # additional ossec snippet to master.conf
+  # ossecConfig: |
+  #     <ossec_config>
+  #       <integration>
+  #         <name>slack</name>
+  #         <hook_url>xxxx</hook_url> 
+  #         <alert_format>json</alert_format>
+  #         <group>vulnerability-detector,ossec,sca</group>
+  #         <level>3</level>
+  #         <options>{\"pretext\": \"Wazuh alerts\"}</options>
+  #       </integration>
+  #     </ossec_config>
+
 
 # Svc for manager
 wazuh:
@@ -135,6 +148,21 @@ managerWorker:
       repository: wazuh/wazuh-manager
       # tag: ""
 
+  # additional ossec snippet to worker.conf
+  # ossecConfig: |
+  #     <ossec_config>
+  #       <integration>
+  #         <name>slack</name>
+  #         <hook_url>xxxx</hook_url> 
+  #         <alert_format>json</alert_format>
+  #         <group>vulnerability-detector,ossec,sca</group>
+  #         <level>3</level>
+  #         <options>{\"pretext\": \"Wazuh alerts\"}</options>
+  #       </integration>
+  #     </ossec_config>
+
+
+    
 # Svc for worker
 workers:
   ports:
