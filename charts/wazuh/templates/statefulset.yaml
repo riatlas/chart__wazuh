@@ -143,9 +143,30 @@ spec:
         node-type: master
       annotations:
         checksum/token-cred: {{ .Values.cred | toString | sha256sum }}
-        checksum/token-conf: {{ include (print $.Template.BasePath "/cm-conf.yaml") $ | sha256sum }}
+        checksum/wazu-conf: {{ include (print $.Template.BasePath "/cm-conf.yaml") $ | sha256sum }}
+        checksum/integrations-conf: {{ include (print $.Template.BasePath "/cm-integrations.yaml") $ | sha256sum }}
       name: wazuh-manager-master
     spec:
+      initContainers:
+        - name: set-integrations
+          image: busybox
+          command: 
+            - "/bin/sh"
+            - "-c"
+            - |
+              echo "install integrations..."
+              cp /mnt/custom-* /var/ossec/integrations/
+              chmod 750 /var/ossec/integrations/custom-*
+              echo "done"
+          volumeMounts:
+          - mountPath: /var/ossec/integrations
+            name: wazuh-manager-master
+            subPath: wazuh/var/ossec/integrations
+          {{- range $path,$_ := .Files.Glob "files/integrations/*" }}
+          - mountPath: /mnt/{{ $path | base }}
+            name: integrations
+            subPath: {{ $path | base }}
+          {{- end }}
       containers:
       - env:
         - name: INDEXER_URL
@@ -256,6 +277,9 @@ spec:
       - configMap:
           name: {{ include "wazuh.fullname" . }}-conf
         name: config
+      - configMap:
+          name: {{ include "wazuh.fullname" . }}-integrations
+        name: integrations        
       - name: filebeat-certs
         secret:
           secretName: {{ include "wazuh.fullname" . }}-indexer-certs
