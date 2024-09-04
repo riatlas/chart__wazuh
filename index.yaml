@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   wazuh:
   - apiVersion: v2
+    appVersion: 4.8.2
+    created: "2024-09-04T09:00:25.215824768Z"
+    description: A Helm chart for Kubernetes
+    digest: c5b184ec05681165956e89f93b9dc24a38688a2e6aa3d0e7b4231e1a867a0c7d
+    name: wazuh
+    type: application
+    urls:
+    - https://github.com/riatlas/chart__wazuh/releases/download/wazuh-1.3.0/wazuh-1.3.0.tgz
+    version: 1.3.0
+  - apiVersion: v2
     appVersion: 4.8.0
     created: "2024-07-11T15:26:36.191316482Z"
     description: A Helm chart for Kubernetes
@@ -41,4 +51,4 @@ entries:
     urls:
     - https://github.com/riatlas/chart__wazuh/releases/download/wazuh-1.0.0/wazuh-1.0.0.tgz
     version: 1.0.0
-generated: "2024-07-11T15:26:36.191331871Z"
+generated: "2024-09-04T09:00:25.215852871Z"
