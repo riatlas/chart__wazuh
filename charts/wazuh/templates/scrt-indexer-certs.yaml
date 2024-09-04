@@ -1,26 +1,25 @@
+{{- $ca := genCA "indexer-certs-ca" 365 -}}
+{{- $admin := genSignedCert "admin" nil nil 365 $ca -}}
+{{- $dashboard := genSignedCert "dashboard" nil nil 365 $ca -}}
+{{- $filebeat := genSignedCert "filebeat" nil nil 365 $ca -}}
+{{- $node := genSignedCert "*.wazuh-indexer" nil nil 365 $ca -}}
 apiVersion: v1
 kind: Secret
 metadata:
   name: {{ include "wazuh.fullname" . }}-indexer-certs
   labels:
   {{- include "wazuh.labels" . | nindent 4 }}
+annotations:
+  "helm.sh/hook": "pre-install"
+  "helm.sh/hook-delete-policy": "before-hook-creation"
 data:
-  admin-key.pem: |-
-{{ .Files.Get "files/certs/admin-key.pem" | b64enc | indent 4 }}
-  admin.pem: |-
-{{ .Files.Get "files/certs/admin.pem" | b64enc | indent 4 }}
-  dashboard-key.pem: |-
-{{ .Files.Get "files/certs/dashboard-key.pem" | b64enc | indent 4 }}
-  dashboard.pem: |-
-{{ .Files.Get "files/certs/dashboard.pem" | b64enc | indent 4 }}
-  filebeat-key.pem: |-
-{{ .Files.Get "files/certs/filebeat-key.pem" | b64enc | indent 4 }}
-  filebeat.pem: |-
-{{ .Files.Get "files/certs/filebeat.pem" | b64enc | indent 4 }}
-  node-key.pem: |-
-{{ .Files.Get "files/certs/node-key.pem" | b64enc | indent 4 }}
-  node.pem: |-
-{{ .Files.Get "files/certs/node.pem" | b64enc | indent 4 }}
-  root-ca.pem: |-
-{{ .Files.Get "files/certs/root-ca.pem" | b64enc | indent 4 }}
+  admin-key.pem: {{ $admin.Key | b64enc }}
+  admin.pem: {{ $admin.Cert | b64enc }}
+  dashboard-key.pem: {{ $dashboard.Key | b64enc }}
+  dashboard.pem: {{ $dashboard.Cert | b64enc }}
+  filebeat-key.pem: {{ $filebeat.Key | b64enc }}
+  filebeat.pem: {{ $filebeat.Cert | b64enc }}
+  node-key.pem: {{ $node.Key | b64enc }}
+  node.pem: {{ $node.Cert | b64enc }}
+  root-ca.pem: {{ $ca.Cert | b64enc }}
 type: Opaque

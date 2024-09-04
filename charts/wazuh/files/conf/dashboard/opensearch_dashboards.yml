@@ -10,4 +10,8 @@ server.ssl.enabled: true
 server.ssl.key: "/usr/share/wazuh-dashboard/certs/key.pem"
 server.ssl.certificate: "/usr/share/wazuh-dashboard/certs/cert.pem"
 opensearch.ssl.certificateAuthorities: ["/usr/share/wazuh-dashboard/certs/root-ca.pem"]
+{{- if ge .Chart.AppVersion "4.8.0" }}
+uiSettings.overrides.defaultRoute: /app/wz-home
+{{- else }}
 uiSettings.overrides.defaultRoute: /app/wazuh
+{{- end }}

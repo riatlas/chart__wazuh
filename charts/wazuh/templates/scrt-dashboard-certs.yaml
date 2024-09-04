@@ -1,14 +1,16 @@
+{{- $ca := genCA "dashboard-certs-ca" 365 -}}
+{{- $cert := genSignedCert "root-ca" nil nil 365 $ca -}}
 apiVersion: v1
 kind: Secret
 metadata:
   name: {{ include "wazuh.fullname" . }}-dashboard-certs
   labels:
   {{- include "wazuh.labels" . | nindent 4 }}
+annotations:
+  "helm.sh/hook": "pre-install"
+  "helm.sh/hook-delete-policy": "before-hook-creation"
 data:
-  cert.pem: |-
-{{ .Files.Get "files/certs/cert.pem" | b64enc | indent 4 }}
-  key.pem: |-
-{{ .Files.Get "files/certs/key.pem" | b64enc | indent 4 }}
-  root-ca.pem: |-
-{{ .Files.Get "files/certs/root-ca.pem" | b64enc | indent 4 }}
+  cert.pem: {{ $cert.Cert | b64enc }}
+  key.pem: {{ $cert.Key | b64enc }}
+  root-ca.pem: {{ $ca.Cert | b64enc }}
 type: Opaque
