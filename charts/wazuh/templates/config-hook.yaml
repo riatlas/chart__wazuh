@@ -1,0 +1,210 @@
+{{- $ns := .Release.Namespace }}
+{{- $name := include "wazuh.fullname" . }}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-config-job"
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install,post-upgrade,post-rollback
+    #"helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      name: "{{ .Release.Name }}-config-job"
+      labels:
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+      annotations:
+        checksum/token: {{ .Values.cred | toString | sha256sum }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Release.Name }}-internal-kubectl
+      containers:
+        - name: kubectl
+          image: "bitnami/kubectl"
+          command:
+            - "bin/bash"
+            - "-c"
+            - |
+                kubectl -n wazuh exec -i wazuh-manager-master-0 -c wazuh-manager -- bash <<"EOF"
+
+                echo "[.] wait for opensearch running"
+                until $(bash -c "</dev/tcp/indexer/9200" &> /dev/null); do
+                echo "waiting for opensearch port ..."
+                sleep 10
+                done
+
+                #echo "[i] clean .kibana indices"
+                #curl -k -X DELETE -u 'admin:{{ .Values.cred.indexer.password }}' 'https://indexer:9200/.kibana_*'
+
+                echo "[i] Add admin credentials into wazuh keystore"
+                /var/ossec/bin/wazuh-keystore -f indexer -k username -v admin
+                /var/ossec/bin/wazuh-keystore -f indexer -k password -v '{{ .Values.cred.indexer.password }}'
+
+                echo "[i] enable debugging"
+                sed -i 's/wazuh_modules.debug=.*//g' /var/ossec/etc/local_internal_options.conf
+                echo "wazuh_modules.debug=2" >> /var/ossec/etc/local_internal_options.conf
+
+                EOF
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-certs-job"
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install,post-upgrade,post-rollback
+    #"helm.sh/hook": pre-install,pre-upgrade,pre-rollback
+    #"helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      name: "{{ .Release.Name }}-certs-job"
+      labels:
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+      annotations:
+        checksum/token: {{ .Values.cred | toString | sha256sum }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Release.Name }}-internal-kubectl
+      containers:
+        - name: kubectl
+          image: "bitnami/kubectl"
+          command:
+            - "bin/bash"
+            - "-c"
+            - |
+                cd /tmp
+
+                mkdir dashboard
+                mkdir indexer
+
+                echo "Root CA"
+                openssl genrsa -out root-ca-key.pem 2048
+                openssl req -days 3650 -new -x509 -sha256 -key root-ca-key.pem -out root-ca.pem -subj "/C=US/L=California/O=Company/CN=root-ca"
+                cp root-*.pem dashboard
+                cp root-*.pem indexer
+
+                ( 
+                  cd dashboard
+                  echo "[i] generate certificates for dashboard"
+                  openssl req -x509 -batch -nodes -days 3650 -newkey rsa:2048 -keyout key.pem -out cert.pem 
+                )
+
+                ( 
+                  cd indexer
+                  echo "[i] generate certificates for indexer"
+                  
+                  echo "Admin cert"
+                  echo "create: admin-key-temp.pem"
+                  openssl genrsa -out admin-key-temp.pem 2048
+                  echo "create: admin-key.pem"
+                  openssl pkcs8 -inform PEM -outform PEM -in admin-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out admin-key.pem
+                  echo "create: admin.csr"
+                  openssl req -days 3650 -new -key admin-key.pem -out admin.csr -subj "/C=US/L=California/O=Company/CN=admin"
+                  echo "create: admin.pem"
+                  openssl x509 -req -days 3650 -in admin.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out admin.pem
+
+                  echo "* Node cert"
+                  echo "create: node-key-temp.pem"
+                  openssl genrsa -out node-key-temp.pem 2048
+                  echo "create: node-key.pem"
+                  openssl pkcs8 -inform PEM -outform PEM -in node-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out node-key.pem
+                  echo "create: node.csr"
+                  openssl req -days 3650 -new -key node-key.pem -out node.csr -subj "/C=US/L=California/O=Company/CN=indexer"
+                  echo "create: node.pem"
+                  openssl x509 -req -days 3650 -in node.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out node.pem
+
+                  echo "* dashboard cert"
+                  echo "create: dashboard-key-temp.pem"
+                  openssl genrsa -out dashboard-key-temp.pem 2048
+                  echo "create: dashboard-key.pem"
+                  openssl pkcs8 -inform PEM -outform PEM -in dashboard-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out dashboard-key.pem
+                  echo "create: dashboard.csr"
+                  openssl req -days 3650 -new -key dashboard-key.pem -out dashboard.csr -subj "/C=US/L=California/O=Company/CN=dashboard"
+                  echo "create: dashboard.pem"
+                  openssl x509 -req -days 3650 -in dashboard.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out dashboard.pem
+
+                  echo "* Filebeat cert"
+                  echo "create: filebeat-key-temp.pem"
+                  openssl genrsa -out filebeat-key-temp.pem 2048
+                  echo "create: filebeat-key.pem"
+                  openssl pkcs8 -inform PEM -outform PEM -in filebeat-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out filebeat-key.pem
+                  echo "create: filebeat.csr"
+                  openssl req -days 3650 -new -key filebeat-key.pem -out filebeat.csr -subj "/C=US/L=California/O=Company/CN=filebeat"
+                  echo "create: filebeat.pem"
+                  openssl x509 -req -days 3650 -in filebeat.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out filebeat.pem
+                )
+
+                echo "[i] remove temp files"
+                rm -f indexer/*-temp.pem indexer/*.csr indexer/*.srl
+            
+                echo "[i] generate secrets"
+                kubectl -n {{ $ns }} delete secret --ignore-not-found wazuh-indexer-certs
+                kubectl -n {{ $ns }} delete secret --ignore-not-found wazuh-dashboard-certs
+
+                kubectl -n {{ $ns }} create secret generic wazuh-dashboard-certs --from-file=dashboard
+                kubectl -n {{ $ns }} create secret generic wazuh-indexer-certs --from-file=indexer
+                
+                
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-internal-kubectl     
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-modify-pods
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"] 
+  - apiGroups: [""] 
+    resources: ["pods/exec"] 
+    verbs: ["create", "delete"]   
+  - apiGroups: [""] 
+    resources: ["secrets"] 
+    verbs: ["create", "delete"]  
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-modify-pods-to-sa
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-internal-kubectl
+roleRef:
+  kind: Role
+  name: {{ .Release.Name }}-modify-pods
+  apiGroup: rbac.authorization.k8s.io
+---
+
+
+
+
+
+
+
+
+
+
+

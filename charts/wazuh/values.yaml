@@ -66,12 +66,7 @@ indexer:
     image:
       repository: wazuh/wazuh-indexer
       # tag: ""
-    resources:
-      requests:
-        cpu: 500m
-        memory: 1Gi
-      limits:
-        memory: 2Gi
+    resources: {}
 
 # Master configs
 managerMaster:
@@ -86,8 +81,8 @@ managerMaster:
         add:
         - SYS_CHROOT
     env:
-      filebeatSslVerificationMode: full
-      indexerUrl: https://wazuh-indexer-0.wazuh-indexer:9200
+      filebeatSslVerificationMode: none #full
+      indexerUrl: https://indexer:9200
       sslCertificate: /etc/ssl/filebeat.pem
       sslCertificateAuthorities: /etc/ssl/root-ca.pem
       sslKey: /etc/ssl/filebeat.key
@@ -139,8 +134,8 @@ managerWorker:
         add:
         - SYS_CHROOT
     env:
-      filebeatSslVerificationMode: full
-      indexerUrl: https://wazuh-indexer-0.wazuh-indexer:9200
+      filebeatSslVerificationMode: none #full
+      indexerUrl: https://indexer:9200
       sslCertificate: /etc/ssl/filebeat.pem
       sslCertificateAuthorities: /etc/ssl/root-ca.pem
       sslKey: /etc/ssl/filebeat.key
