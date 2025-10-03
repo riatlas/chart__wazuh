@@ -86,7 +86,7 @@ spec:
       serviceAccountName: {{ .Release.Name }}-internal-kubectl
       containers:
         - name: kubectl
-          image: "bitnami/kubectl"
+          image: "bitnamilegacy/kubectl"
           command:
             - "bin/bash"
             - "-c"
@@ -197,6 +197,7 @@ roleRef:
   name: {{ .Release.Name }}-modify-pods
   apiGroup: rbac.authorization.k8s.io
 ---
+
 
 
 
